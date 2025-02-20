@@ -1,82 +1,101 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_firebase_auth/login_screen.dart';
 
-class CreateAccountScreen extends StatelessWidget {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+class CreateAccountScreen extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    Future<void> _createAccount() async {
-      final email = _emailController.text;
-      final password = _passwordController.text;
-      final confirmPassword = _passwordController.text;
-      if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-        print('Please enter email and password');
-        return;
-      }
-      if (_confirmPasswordController.text != _passwordController.text) {
-        print('Password not match');
-        return;
-      }
-      // Add your create account logic here
-      final FirebaseAuth _auth = FirebaseAuth.instance;
-      try {
-        UserCredential userCredential =
-            await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
-        );
-        //TODO show success message to user
-        //TODO navigate to login screen
-        print('Account created: ${userCredential.user?.uid}');
-      } on FirebaseAuthException catch (e) {
-        //TODO show error to user
-        if (e.code == 'weak-password') {
-          print('The password provided is too weak.');
-        } else if (e.code == 'email-already-in-use') {
-          print('The account already exists for that email.');
-        } else {
-          print(e);
-        }
-      } catch (e) {
-        print(e);
-      }
+  _CreateAccountScreenState createState() => _CreateAccountScreenState();
+}
+
+class _CreateAccountScreenState extends State<CreateAccountScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> _createAccount() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showErrorDialog("โปรดกรอกข้อมูลให้ครบถ้วน");
+      return;
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Create Account'),
+    if (password != confirmPassword) {
+      _showErrorDialog("รหัสผ่านไม่ตรงกัน");
+      return;
+    }
+
+    try {
+      await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+      _showSuccessDialog("สมัครสมาชิกสำเร็จ!");
+    } catch (e) {
+      _showErrorDialog("เกิดข้อผิดพลาด: ${e.toString()}");
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("ข้อผิดพลาด"),
+        content: Text(message),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text("ตกลง")),
+        ],
       ),
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("สำเร็จ"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context); // กลับไปที่หน้า Login
+            },
+            child: Text("ตกลง"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Create Account')),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
-          children: <Widget>[
+          children: [
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
+                  labelText: 'Email', border: OutlineInputBorder()),
               keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: 16.0),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-              ),
+                  labelText: 'Password', border: OutlineInputBorder()),
               obscureText: true,
             ),
             SizedBox(height: 16.0),
             TextField(
               controller: _confirmPasswordController,
               decoration: InputDecoration(
-                labelText: 'Confire Password',
-                border: OutlineInputBorder(),
-              ),
+                  labelText: 'Confirm Password', border: OutlineInputBorder()),
               obscureText: true,
             ),
             SizedBox(height: 16.0),

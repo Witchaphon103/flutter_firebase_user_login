@@ -5,9 +5,16 @@ import 'login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("✅ Firebase initialized successfully");
+  } catch (e) {
+    print("❌ Firebase initialization failed: $e");
+  }
+
   runApp(const MainApp());
 }
 
@@ -18,10 +25,25 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Firebase Auth',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginScreen(),
+      home: FutureBuilder(
+        future: Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Scaffold(
+              body: Center(child: Text("❌ Firebase Error: ${snapshot.error}")),
+            );
+          }
+          return LoginScreen();
+        },
+      ),
     );
   }
 }
